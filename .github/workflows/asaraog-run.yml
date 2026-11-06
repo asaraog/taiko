@@ -1,0 +1,28 @@
+name: asaraog-run
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: branch or sha to test
+        required: true
+      files:
+        description: unit test files (relative to tests/)
+        required: false
+        default: unit-tests/**/*.test.js
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libxcomposite1 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 libdrm-dev libgbm-dev libasound-dev
+      - uses: biomejs/setup-biome@v2
+      - run: biome check packages/taiko tests/unit-tests
+      - run: cd tests && node ../node_modules/mocha/bin/mocha.js "${{ inputs.files }}" --require unit-tests/setup.js --timeout 9000 --trace-warnings --exit
